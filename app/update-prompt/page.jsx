@@ -1,18 +1,24 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-
 import Form from "@components/Form";
 
 const UpdatePrompt = () => {
   const router = useRouter();
+
+  const { data: session } = useSession();
+
+  const [submitting, setSubmitting] = useState(false);
+
   const searchParams = useSearchParams();
+
   const promptId = searchParams.get("id");
 
-  const [post, setPost] = useState({ prompt: "", tag: "" });
-  const [submitting, setIsSubmitting] = useState(false);
+  const [post, setPost] = useState({
+    prompt: "",
+    tag: "",
+  });
 
   useEffect(() => {
     const getPromptDetails = async () => {
@@ -24,15 +30,18 @@ const UpdatePrompt = () => {
         tag: data.tag,
       });
     };
-
-    if (promptId) getPromptDetails();
+    if (promptId) {
+      getPromptDetails();
+    }
   }, [promptId]);
 
   const updatePrompt = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setSubmitting(true);
 
-    if (!promptId) return alert("Missing PromptId!");
+    if (!promptId) {
+      return alert("Prompt ID  not found!");
+    }
 
     try {
       const response = await fetch(`/api/prompt/${promptId}`, {
@@ -47,23 +56,29 @@ const UpdatePrompt = () => {
         router.push("/");
       }
     } catch (error) {
-      console.error(error); // Log the error for better debugging
+      console.log(error);
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <Form
-        type="Edit"
-        post={post}
-        setPost={setPost}
-        submitting={submitting}
-        handleSubmit={updatePrompt}
-      />
+    <Form
+      type="Edit"
+      post={post}
+      setPost={setPost}
+      submitting={submitting}
+      handleSubmit={updatePrompt}
+    ></Form>
+  );
+};
+
+const EditPrompt = () => {
+  return (
+    <Suspense>
+      <UpdatePrompt />
     </Suspense>
   );
 };
 
-export default UpdatePrompt;
+export default EditPrompt;
